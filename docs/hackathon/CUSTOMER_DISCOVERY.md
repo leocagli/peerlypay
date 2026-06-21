@@ -303,7 +303,7 @@ Basado en *The Mom Test* (Rob Fitzgerald). La regla: **preguntá por su vida y s
 
 ## 9. Logística y mapeo a la rúbrica
 
-- **Quién entrevista:** repartir entre Alexis, Steven, Stefano y Barb — idealmente 1–2 entrevistas por persona, un mismo entrevistador no monopoliza para no sesgar.
+- **Quién entrevista:** repartir entre el equipo — idealmente 1–2 entrevistas por persona, un mismo entrevistador no monopoliza para no sesgar.
 - **Grabación/consentimiento:** pedí permiso para tomar notas y para citar (aunque sea anonimizado: "un freelancer dev, seg. A"). Sin consentimiento, igual usás la quote anonimizada.
 - **Plazo:** la submission de PULSO cierra el **30 de junio**. Agendá y completá las 5 fichas con margen para escribir la Síntesis antes de esa fecha.
 - **Dónde vive la evidencia:** este archivo (`docs/hackathon/CUSTOMER_DISCOVERY.md`) + el resumen citado en el README. Linkealos desde el pitch deck.

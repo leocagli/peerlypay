@@ -1,6 +1,6 @@
 # PeerlyPay — CONTEXT (Single Source of Truth)
 
-> Handoff notes for the team (Alexis, Steven, Stefano, Barb) and any future contributor.
+> Handoff notes for the team and any future contributor.
 > This doc captures the **real vs mock** state, key on-chain IDs, the architecture map,
 > build/run/deploy steps, and the open items before the **PULSO Argentina** submission
 > (deadline **2026-06-30**). When in doubt, this file wins. Update it as you ship.
