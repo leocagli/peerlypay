@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   // a server key (sk_) here. Other NEXT_PUBLIC_* values default to testnet in code.
   env: {
     NEXT_PUBLIC_CROSSMINT_API_KEY:
-      "ck_staging_5MwoQSikyguRgnHXQGNm2khXk73gYR7YiHRZHA5apxWCyxcBJmi5mPiQSbCss3wSUQqTSchWEVcW3pDqRK8P38pZgDhFeiVZQftUazAKQgSKSQ6Vi1wK1W5oD1cfCrpJYGHmKjUt9ELHUPNsVEN5enUMRKYjwQ7XJC81QQjSBa2gSPyN5LZCMRVZabJiGt3p6oFEbqtm7uBvdpBhdJkfDhAo",
+      "ck_staging_5MwoQSikyguRgnHXQGNm2khXk73gYR7YiHRZHA5apxWCyxcBJmi71Dc7iDZLtHJFW8EsYFgAseszxffGeX9f7dQXoBFds1VCoZyEf5EdTGextNPGdJekqc4ThtPMP6dPotRjY7BrSwgVNirhbA3oX1eKEg388mpmgWhvkEpiqMYsYjV39z2XovHwryEyMjwy3ddVjksWq1Q3d3Ty4axsgM6A",
   },
 };
 
