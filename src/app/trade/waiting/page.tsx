@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useWallet } from '@crossmint/client-sdk-react-ui';
+import { useStellarWallet } from '@/lib/privy-wallet';
 import {
   ArrowLeft,
   Loader2,
@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import TradeChatDrawer from '@/components/trade/TradeChatDrawer';
-import { confirmFiatPaymentWithCrossmint } from '@/lib/p2p-crossmint';
+import { confirmFiatPayment } from '@/lib/trade-actions';
 import { loadChainOrderByIdFromContract } from '@/lib/p2p';
 import type { ChainOrder, P2POrderStatus } from '@/types';
 import { useStore } from '@/lib/store';
@@ -24,8 +24,8 @@ const POLL_INTERVAL_MS = 5000;
 function WaitingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { wallet } = useWallet();
-  const walletAddress = useStore((state) => state.user.walletAddress);
+  const { wallet, address: stellarAddress } = useStellarWallet();
+  const walletAddress = useStore((state) => state.user.walletAddress) ?? stellarAddress;
   const refreshOrdersFromChain = useStore((state) => state.refreshOrdersFromChain);
 
   const flowId = searchParams.get('flowId') || '';
@@ -117,7 +117,8 @@ function WaitingContent() {
     setIsConfirming(true);
 
     try {
-      await confirmFiatPaymentWithCrossmint({
+      if (!wallet) throw new Error('Wallet not ready');
+      await confirmFiatPayment({
         wallet,
         caller: walletAddress,
         orderId,
@@ -130,7 +131,7 @@ function WaitingContent() {
     } finally {
       setIsConfirming(false);
     }
-  }, [isDemo, navigateToSuccess, orderId, refreshOrdersFromChain, wallet, walletAddress]);
+  }, [isDemo, navigateToSuccess, orderId, refreshOrdersFromChain, wallet, walletAddress, stellarAddress]);
 
   const userIsCreator = useMemo(() => {
     if (!walletAddress || !order) {

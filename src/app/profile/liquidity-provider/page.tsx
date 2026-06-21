@@ -3,15 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@crossmint/client-sdk-react-ui";
+import { useStellarWallet } from "@/lib/privy-wallet";
 import { ArrowLeft, Loader2, Store } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  confirmFiatPaymentWithCrossmint,
-  submitFiatPaymentWithCrossmint,
-} from "@/lib/p2p-crossmint";
+import { confirmFiatPayment, submitFiatPayment } from "@/lib/trade-actions";
 import { useStore } from "@/lib/store";
 import type { Order } from "@/types";
 
@@ -31,7 +28,7 @@ function getLpAction(order: Order): LpAction {
 
 export default function LiquidityProviderPage() {
   const router = useRouter();
-  const { wallet } = useWallet();
+  const { wallet } = useStellarWallet();
 
   const orders = useStore((state) => state.orders);
   const user = useStore((state) => state.user);
@@ -58,18 +55,19 @@ export default function LiquidityProviderPage() {
     setPendingOrderId(order.id);
 
     try {
+      if (!wallet) throw new Error('Wallet not ready');
       if (action === "submit_fiat") {
-        await submitFiatPaymentWithCrossmint({
+        await submitFiatPayment({
           wallet,
           caller: walletAddress,
-          orderId: order.orderId,
+          orderId: String(order.orderId),
         });
         toast.success("Fiat payment marked as submitted.");
       } else {
-        await confirmFiatPaymentWithCrossmint({
+        await confirmFiatPayment({
           wallet,
           caller: walletAddress,
-          orderId: order.orderId,
+          orderId: String(order.orderId),
         });
         toast.success("Fiat payment confirmed. Funds released.");
       }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useAuth } from '@crossmint/client-sdk-react-ui';
+import { usePrivy } from '@privy-io/react-auth';
 import { Wallet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import FadeIn from '@/components/FadeIn';
@@ -14,7 +14,7 @@ import OrderTypeSelector from './OrderTypeSelector';
 export default function CreateOrderClient() {
   const searchParams = useSearchParams();
   const user = useStore((s) => s.user);
-  const { login } = useAuth();
+  const { login } = usePrivy();
   const initialType = (searchParams.get('type') as 'buy' | 'sell') || 'sell';
   const [orderType, setOrderType] = useState<'buy' | 'sell'>(initialType);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -26,7 +26,7 @@ export default function CreateOrderClient() {
 
     try {
       await login();
-      toast.success('Crossmint login iniciado');
+      toast.success('Login iniciado');
     } catch {
       toast.error('No se pudo iniciar el login');
     } finally {

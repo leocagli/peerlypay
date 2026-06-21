@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useWallet } from '@crossmint/client-sdk-react-ui';
+import { useStellarWallet } from '@/lib/privy-wallet';
 import {
   Copy,
   Check,
@@ -17,7 +17,7 @@ import {
 import { toast } from 'sonner';
 import TradeChatDrawer from '@/components/trade/TradeChatDrawer';
 import Transferencias30QR from '@/components/trade/Transferencias30QR';
-import { submitFiatPaymentWithCrossmint } from '@/lib/p2p-crossmint';
+import { submitFiatPayment } from '@/lib/trade-actions';
 import { useLiveRate } from '@/lib/useLiveRate';
 import { useStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -225,9 +225,8 @@ function CopyRow({
 function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { wallet } = useWallet();
-
-  const walletAddress = useStore((s) => s.user.walletAddress);
+  const { wallet, address: stellarAddress } = useStellarWallet();
+  const walletAddress = useStore((s) => s.user.walletAddress) ?? stellarAddress;
   const orders = useStore((s) => s.orders);
   const updateOrderStatus = useStore((s) => s.updateOrderStatus);
   const refreshOrdersFromChain = useStore((s) => s.refreshOrdersFromChain);
@@ -316,7 +315,8 @@ function PaymentContent() {
 
     setIsSubmitting(true);
     try {
-      await submitFiatPaymentWithCrossmint({
+      if (!wallet) throw new Error('Wallet not ready');
+      await submitFiatPayment({
         wallet,
         caller: walletAddress,
         orderId,
@@ -344,6 +344,7 @@ function PaymentContent() {
     updateOrderStatus,
     wallet,
     walletAddress,
+    stellarAddress,
   ]);
 
   const avatarInitials = makerName.slice(0, 2).toUpperCase();

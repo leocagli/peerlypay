@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@crossmint/client-sdk-react-ui";
+import { useStellarWallet } from "@/lib/privy-wallet";
 import { toast } from "sonner";
 import { ArrowLeft, Info, Loader2 } from "lucide-react";
 
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStore } from "@/lib/store";
-import { createOrderWithCrossmint } from "@/lib/p2p-crossmint";
+import { createOrder } from "@/lib/trade-actions";
 import { FiatCurrencyCode, PaymentMethodCode } from "@/types";
 
 const LATAM_CURRENCIES = [
@@ -74,7 +74,7 @@ function getCurrencyMeta(code: number) {
 
 export default function MarketMakerForm() {
   const router = useRouter();
-  const { wallet } = useWallet();
+  const { wallet } = useStellarWallet();
   const user = useStore((state) => state.user);
   const refreshOrdersFromChain = useStore((state) => state.refreshOrdersFromChain);
 
@@ -156,7 +156,8 @@ export default function MarketMakerForm() {
     await new Promise((resolve) => setTimeout(resolve, 600));
 
     try {
-      await createOrderWithCrossmint({
+      if (!wallet) throw new Error('Wallet not ready');
+      await createOrder({
         wallet,
         caller: user.walletAddress as string,
         input: {

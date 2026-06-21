@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWallet } from '@crossmint/client-sdk-react-ui';
+import { useStellarWallet } from '@/lib/privy-wallet';
 import { toast } from 'sonner';
 import { Minus, Plus, Loader2 } from 'lucide-react';
 import { useStore } from '@/lib/store';
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { createOrderWithCrossmint } from '@/lib/p2p-crossmint';
+import { createOrder } from '@/lib/trade-actions';
 
 export interface FormData {
   amount: number;
@@ -100,7 +100,7 @@ function NumberField({
 
 export default function CreateOrderForm({ orderType }: CreateOrderFormProps) {
   const router = useRouter();
-  const { wallet } = useWallet();
+  const { wallet } = useStellarWallet();
   const user = useStore((state) => state.user);
   const refreshOrdersFromChain = useStore((state) => state.refreshOrdersFromChain);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -146,7 +146,8 @@ export default function CreateOrderForm({ orderType }: CreateOrderFormProps) {
     };
 
     try {
-      await createOrderWithCrossmint({
+      if (!wallet) throw new Error('Wallet not ready');
+      await createOrder({
         wallet,
         caller: user.walletAddress as string,
         input,

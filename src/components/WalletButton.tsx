@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useAuth, useWallet } from "@crossmint/client-sdk-react-ui";
+import { usePrivy } from "@privy-io/react-auth";
 import { toast } from "sonner";
 import {
   Wallet,
@@ -13,77 +13,67 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useStellarWallet } from "@/lib/privy-wallet";
 import { fetchWalletUsdcBalance } from "@/lib/wallet-balance";
 
 export default function WalletButton() {
   const { user, connectWallet, disconnectWallet, setWalletStatus, setBalance } = useStore();
-  const { login, logout, status } = useAuth();
-  const { wallet } = useWallet();
+  const { login, logout, ready, authenticated } = usePrivy();
+  const { address: stellarAddress } = useStellarWallet();
   const { isConnected, walletAddress, balance } = user;
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activeWalletAddress = walletAddress ?? wallet?.address ?? null;
+  const activeWalletAddress = walletAddress ?? stellarAddress ?? null;
+
+  // Sync Privy auth state into the store
+  useEffect(() => {
+    if (!ready) return;
+    setWalletStatus(authenticated ? 'logged-in' : 'logged-out');
+  }, [ready, authenticated, setWalletStatus]);
 
   useEffect(() => {
-    setWalletStatus(status ?? null);
-  }, [setWalletStatus, status]);
+    if (!ready) return;
 
-  useEffect(() => {
-    if (wallet?.address) {
-      connectWallet(
-        wallet.address,
-        wallet.owner ?? null,
-        status ?? "logged-in",
-      );
+    if (stellarAddress) {
+      connectWallet(stellarAddress, null, 'logged-in');
       return;
     }
 
-    if (status === "logged-out") {
+    if (!authenticated) {
       disconnectWallet();
     }
-  }, [connectWallet, disconnectWallet, status, wallet?.address, wallet?.owner]);
+  }, [ready, authenticated, stellarAddress, connectWallet, disconnectWallet]);
 
   const refreshWalletBalance = useCallback(async () => {
-    if (!wallet?.address || status === "logged-out") {
-      return;
-    }
-
+    if (!activeWalletAddress || !authenticated) return;
     try {
-      const usdc = await fetchWalletUsdcBalance(wallet);
+      const usdc = await fetchWalletUsdcBalance(activeWalletAddress);
       setBalance(usdc);
     } catch (error) {
       console.error("Failed to fetch wallet balance", error);
     }
-  }, [setBalance, status, wallet]);
+  }, [activeWalletAddress, authenticated, setBalance]);
 
   useEffect(() => {
     void refreshWalletBalance();
   }, [refreshWalletBalance]);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
+    if (!isOpen) return;
     void refreshWalletBalance();
   }, [isOpen, refreshWalletBalance]);
 
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
@@ -92,18 +82,14 @@ export default function WalletButton() {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === "Escape") setIsOpen(false);
     }
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-    }
+    if (isOpen) document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen]);
 
   const handleConnect = async () => {
     setIsConnecting(true);
-
     try {
       await login();
-      toast.success("Crossmint login iniciado");
     } catch {
       toast.error("No se pudo iniciar el login");
     } finally {
@@ -127,7 +113,6 @@ export default function WalletButton() {
       toast.error("No wallet address available");
       return;
     }
-
     await navigator.clipboard.writeText(activeWalletAddress);
     toast.success("Direccion copiada");
     setIsOpen(false);
@@ -138,7 +123,6 @@ export default function WalletButton() {
       toast.error("No wallet address available");
       return;
     }
-
     window.open(
       `https://stellar.expert/explorer/testnet/account/${activeWalletAddress}`,
       "_blank",
@@ -153,7 +137,7 @@ export default function WalletButton() {
 
   // --- Disconnected ---
   if (!isConnected) {
-    const isAuthLoading = status === "initializing" || isConnecting;
+    const isAuthLoading = !ready || isConnecting;
 
     return (
       <button
@@ -177,10 +161,8 @@ export default function WalletButton() {
   }
 
   // --- Connected ---
-
   return (
     <div ref={dropdownRef} className="relative">
-      {/* Trigger */}
       <button
         onClick={() => setIsOpen((o) => !o)}
         className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 font-sans text-sm transition-all duration-200 hover:border-gray-300 hover:shadow-sm active:scale-[0.98]"
@@ -194,10 +176,8 @@ export default function WalletButton() {
         />
       </button>
 
-      {/* Dropdown */}
       {isOpen && (
         <div className="absolute right-0 top-full z-50 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-gray-100 bg-white shadow-lg">
-          {/* Network badge */}
           <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
             <span className="inline-flex size-2 rounded-full bg-emerald-400" />
             <span className="font-sans text-sm font-medium text-gray-700">
@@ -205,7 +185,6 @@ export default function WalletButton() {
             </span>
           </div>
 
-          {/* Balance section */}
           <div className="border-b border-gray-100 px-4 py-4">
             <p className="font-sans text-[10px] font-semibold uppercase tracking-wider text-gray-400">
               Balance available
@@ -218,7 +197,6 @@ export default function WalletButton() {
             </p>
           </div>
 
-          {/* Actions */}
           <div className="p-1.5">
             <button
               onClick={handleCopyAddress}

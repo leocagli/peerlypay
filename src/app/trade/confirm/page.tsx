@@ -3,11 +3,11 @@
 import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { useWallet } from '@crossmint/client-sdk-react-ui';
 import { ArrowLeft, ArrowUpCircle, ArrowDownCircle, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmTradeIcon from '@/components/icons/ConfirmTradeIcon';
-import { takeOrderWithCrossmint } from '@/lib/p2p-crossmint';
+import { useStellarWallet } from '@/lib/privy-wallet';
+import { takeOrder } from '@/lib/trade-actions';
 import { useLiveRate } from '@/lib/useLiveRate';
 import { useStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -36,8 +36,8 @@ function formatFiatCompact(value: number): string {
 function ConfirmContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { wallet } = useWallet();
-  const walletAddress = useStore((state) => state.user.walletAddress);
+  const { wallet, address: stellarAddress } = useStellarWallet();
+  const walletAddress = useStore((state) => state.user.walletAddress) ?? stellarAddress;
   const refreshOrdersFromChain = useStore((state) => state.refreshOrdersFromChain);
   const [isChecking, setIsChecking] = useState(false);
   const liveRate = useLiveRate();
@@ -89,7 +89,8 @@ function ConfirmContent() {
         return;
       }
 
-      await takeOrderWithCrossmint({
+      if (!wallet) throw new Error('Wallet not ready');
+      await takeOrder({
         wallet,
         caller: walletAddress,
         orderId,
@@ -109,7 +110,7 @@ function ConfirmContent() {
     } finally {
       setIsChecking(false);
     }
-  }, [fillUsdc, flowId, intentUsdc, isDemo, mode, orderId, refreshOrdersFromChain, router, wallet, walletAddress]);
+  }, [fillUsdc, flowId, intentUsdc, isDemo, mode, orderId, refreshOrdersFromChain, router, wallet, walletAddress, stellarAddress]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white">

@@ -44,14 +44,20 @@ Every write op: `POST /api/tw/<path>` → `{ unsignedTransaction }` → sign wit
 - `src/lib/trustless/roles.ts` — P2P trade → escrow role mapping (`escrowRolesForTrade`, `partiesFromOrder`, `funderForTrade`).
 - `src/app/api/tw/[...path]/route.ts` — server proxy to TW that injects `x-api-key` (allowlisted to `deployer/`, `escrow/`, `helper/`). Keeps the key off the client.
 - `src/lib/escrow-registry.ts` — localStorage registry of escrow contract ids (there is no on-chain "list all"; one order = one contract).
+- **`src/lib/trustless/client.ts`** ✅ — thin client for all TW ops (deploy, fund, changeMilestoneStatus, approveMilestone, releaseFunds, disputeEscrow, resolveDispute). Each op POSTs to the proxy, signs the XDR with `PrivyStellarWallet.signEscrowXdr()`, submits.
+- **`src/lib/privy-wallet.ts`** ✅ — `useStellarWallet()` hook: wraps Privy embedded wallet, exposes `{ wallet, address, isReady }`. `wallet.signEscrowXdr()` stub ready for ELI to wire the actual Privy Stellar signing call.
+- **`src/lib/trade-actions.ts`** ✅ — bridges trade UI to TW client. `submitFiatPayment` and `confirmFiatPayment` are fully wired (need only `signEscrowXdr`). `createOrder` and `takeOrder` are stubs with clear `TODO(ELI)`.
+- **Privy provider swap** ✅ — `@crossmint/client-sdk-react-ui` removed; `@privy-io/react-auth` 2.25.0 installed. `providers.tsx` uses `PrivyProvider`. `WalletButton.tsx` uses `usePrivy`/`useStellarWallet`. All 7 trade pages updated. tsc clean.
+- **`src/lib/wallet-balance.ts`** ✅ — now reads USDC balance from Horizon API (no wallet SDK needed).
 
 ## Pending (needs the 2 credentials below)
 
-1. Privy provider swap: replace `@crossmint/client-sdk-react-ui` with `@privy-io/react-auth` (email login + Stellar embedded wallet); a `signEscrowXdr()` helper using Privy `raw_sign` + `@stellar/stellar-sdk`.
-2. `src/lib/trustless/client.ts` — thin client calling the proxy for each op + signing + submit.
+1. **ELI — implement `signEscrowXdr()`** in `src/lib/privy-wallet.ts`. Steps are documented inline: deserialize XDR with `@stellar/stellar-sdk`, sign with Privy Stellar embedded wallet (`wallet.signTransaction()` or `wallet.sign()`), return signed base64 XDR. Docs: https://docs.privy.io → Wallets → Stellar.
+2. **ELI — wire `createOrder()` and `takeOrder()`** in `src/lib/trade-actions.ts`. Need to: deploy TW escrow using `escrowRolesForTrade()`, fund if `from_crypto=true`, store contractId via `addEscrow()`. The `submitFiatPayment` / `confirmFiatPayment` functions are ready once #1 is done.
 3. Trustline + funding bootstrap: ensure each Privy account has a USDC trustline (`/helper/set-trustline`) + XLM for reserves/fees (friendbot on testnet).
-4. Rewire `store.ts` + trade flow + order forms to the escrow lifecycle; `escrow-mapper` (Escrow ↔ UiOrder); list via the registry + indexer. Keep `?demo=1` working.
-5. Test the full lifecycle on testnet, redeploy to Vercel.
+4. `resolveDispute` should move to a server action signed by `PLATFORM_SECRET` (not user wallet). Currently client stub.
+5. Rewire `store.ts` + order listing to read from the TW indexer (`/helper/get-escrows-by-signer`) + escrow registry. Keep `?demo=1` working.
+6. Test the full lifecycle on testnet, redeploy to Vercel.
 
 ## Credentials needed (only the owner can generate these)
 
